@@ -42,9 +42,8 @@ void getCommandLine(int argc, char **argv);
 int main(int argc, char **argv)
 {
   getCommandLine(argc, argv);
-  if (graph_type == 1){
-
-  }
+  graph_t G = constructGraph(vertices);
+  destructGraph(&G);
 
   return 0;
 }

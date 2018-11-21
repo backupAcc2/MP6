@@ -24,9 +24,10 @@ typedef struct {
 } dijkstra_node;
 
 
-graph_t constructGraph(int vertices);
+graph_t constructGraph(int vertices, int adjVerts);
 graph_t create_graph_1();
 graph_t create_graph_2(int);
+graph_t create_graph_3(int, int);
 void destructGraph(graph_t *G);
 void graphOperation(graph_t *G, int operation);
 void shortestPath(graph_t *G);

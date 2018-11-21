@@ -8,11 +8,11 @@
                            2 = strongly connected,
                            3 = random
     -n         N vertices in graph
-    -a         Approximate nymber of adjacent vertices 0 < A < N
+    -a         Approximate number of adjacent vertices(R): 0 < R < N
     -h [1|2|3] Graph operation; 1 = shortest path
                                 2 = Network diameter
                                 3 = Multiple link-disjoint paths
-    -s         Number of the source vertex 0 <= S <= N
+    -s         Number of the source vertex 0 <= S < N
     -d         Number of the destination vertex 0 <= D < N
     -v         enable verbose output
     -r [x]     seed for the uniform random number generator
@@ -20,14 +20,14 @@
 #include "graph.h"
 
 /* Global variables for command line parameters */
-int graph_type;
+int graph_type = 0;
 int seed = 10212018;
 int Verbose = FALSE;
-int vertices;
-int adjVerts;
-int graph_operation;
-int destination_vertex;
-int source_vertex;
+int vertices = 0;
+int adjVerts = 0;
+int graph_operation = 0;
+int destination_vertex = 0;
+int source_vertex = 0;
 
 /* Prototypes for functions in this file only */
 void getCommandLine(int argc, char **argv);
@@ -36,7 +36,8 @@ void getCommandLine(int argc, char **argv);
 int main(int argc, char **argv)
 {
   getCommandLine(argc, argv);
-  graph_t G = constructGraph(vertices);
+  graph_t G = constructGraph(vertices, adjVerts);
+//  print_adjMatrix(&G);
   graphOperation(&G, graph_operation);
   destructGraph(&G);
 

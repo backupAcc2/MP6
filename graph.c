@@ -16,12 +16,13 @@ extern int destination_vertex;
  * If graph_type is 1, creates graph given in MP6 pdf
  * If graph_type is 2, creates a strongly connected graph
  */
-graph_t constructGraph(int vertices)
+graph_t constructGraph(int vertices, int adjVerts)
 {
     graph_t G;
 
     if (graph_type == 1) { G = create_graph_1(); }
     else if (graph_type == 2) {  G = create_graph_2(vertices); }
+    else if(graph_type == 3) { G = create_graph_3(vertices, adjVerts); }
 
     return G;
 }
@@ -90,6 +91,80 @@ graph_t create_graph_2(int vertices)
 
    return G;
 
+}
+
+
+/******************************************************************************
+ * Function create_graph_3()
+ * Creates the random graph with -n vertices and -a adjacent vertices
+ */
+graph_t create_graph_3(int vertices, int adjNeighbors)
+{
+    graph_t G;
+    int i, j, adj_count;
+    int min = vertices;
+    int max = 0;
+    int max_vertex, min_vertex;
+    double total_adj_count = 0.0;
+    double C, M, D, F;
+
+  // adjacency matrix, holds the cost to get to each node from each vertex
+    double **matrix = (double **) malloc(vertices * sizeof(double *));
+    double matrix_x[vertices]; // holds the x values of each vertex
+    double matrix_y[vertices]; // holds the y values of each vertex
+
+  // find our value of C
+    C = sqrt(adjNeighbors / (vertices * M_PI));
+
+  // find our value of M
+    M = log10(1 + pow(1/C, 2));
+
+  // find the x and y coordinates of each vertex
+    for (i = 0; i < vertices; i++)
+    {
+      if (i == 0) {matrix_x[i] = 0.0; matrix_y[i] = 0.5;}
+      else if (i == vertices-1) {matrix_x[i] = 1.0; matrix_y[i] = 0.5;}
+      else
+      {
+          matrix_x[i] = drand48();
+          matrix_y[i] = drand48();
+      }
+    }
+
+  // fill in the adjacency matrix
+    for(i =0; i < vertices; i++)
+    {
+        adj_count = 0;
+        matrix[i] = (double *) malloc(vertices * sizeof(double));
+        for (j = 0; j < vertices; j++)
+        {
+            D = sqrt(pow(matrix_x[i] - matrix_x[j], 2) + pow(matrix_y[i] - matrix_y[j],2));
+            if (i == j) {matrix[i][j] = 0;}
+            else if ( D <= C)
+            {
+                F = log10(1+pow(1/(D + C/1000), 2));
+                matrix[i][j] = M / F;
+                adj_count++;
+                total_adj_count++;
+            }
+
+            else {matrix[i][j] = FLT_MAX;}
+        }
+        if (adj_count < min) {min = adj_count; min_vertex = i;}
+        if (adj_count > max) {max = adj_count; max_vertex = i;}
+    }
+
+
+    G.adjMatrix = matrix;
+    G.NumVertices = vertices;
+
+    // print out the necessarry statistics
+    // average, max, and min number of adjacent vertices
+    printf("Average number of ajacent vertices: %.2lf\n", total_adj_count / vertices);
+    printf("Maximum adjacent vertices of a vertex: %d (vertex %d)\n", max, max_vertex);
+    printf("Minimum adjacent vertices of a vertex: %d (vertex %d)\n", min, min_vertex);
+
+    return G;
 }
 
 /******************************************************************************

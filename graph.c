@@ -90,16 +90,15 @@ void graphOperation(graph_t *G, int operation)
       int vertices = G->NumVertices;
       double MinDistance = FLT_MAX;
       int vertex_w;
-      int i, j;
-      int already_confirmed = FALSE;
+      int i;
       double path_cost;
       int confirmed_count = 0;
       int no_new_paths = FALSE;
 
       // the following is a set containing the vertices for which we have
-      // confirmed the shortest distance. We will have to append to the array
+      // confirmed the shortest distance. 1 means yes, 0 means no
       int *confirmed = (int*) calloc(vertices, sizeof(int));
-      confirmed[0] = source_vertex;
+      confirmed[source_vertex] = 1;
       confirmed_count++;
 
       // an array containing the shortest distance from the source to each
@@ -112,8 +111,9 @@ void graphOperation(graph_t *G, int operation)
          {
            shortestDistance[i] = (dijkstra_node*)malloc(sizeof(dijkstra_node));
            shortestDistance[i]->cost = G->adjMatrix[source_vertex][i];
-           shortestDistance[i]->predecessor = -1;
+           shortestDistance[i]->predecessor = source_vertex;
          }
+        shortestDistance[source_vertex]->predecessor = -1;
 
       while(confirmed_count != vertices && no_new_paths == FALSE)
       {
@@ -123,14 +123,7 @@ void graphOperation(graph_t *G, int operation)
         // find the vertex at the minimum distance from the source
           for (i = 0; i < vertices; i++)
           {
-            // make sure this vertice is not already confirmed
-            already_confirmed = FALSE;
-            for (j = 0; j < confirmed_count; j++)
-            {
-              if (confirmed[j] == i) { already_confirmed = TRUE; }
-            }
-
-            if (already_confirmed == FALSE && shortestDistance[i]->cost < MinDistance)
+            if (confirmed[i] == 0 && shortestDistance[i]->cost < MinDistance)
             {
               MinDistance = shortestDistance[i]->cost;
               vertex_w = i;
@@ -143,13 +136,13 @@ void graphOperation(graph_t *G, int operation)
         else
         {
            // if a vertex was found, add vertex_w to confirmed set
-             confirmed[confirmed_count] = vertex_w;
+             confirmed[vertex_w] = 1;
              confirmed_count++;
 
            // update the shortest distances via vertex_w that are not already confirmed
            for (i = 0; i < vertices; i++)
            {
-             if (G->adjMatrix[vertex_w][i] < FLT_MAX)
+             if (G->adjMatrix[vertex_w][i] < FLT_MAX && confirmed[i] == 0)
              {
                  path_cost = shortestDistance[vertex_w]->cost + G->adjMatrix[vertex_w][i];
                  if (path_cost < shortestDistance[i]->cost)
@@ -157,8 +150,8 @@ void graphOperation(graph_t *G, int operation)
                      shortestDistance[i]->cost = path_cost;
                      shortestDistance[i]->predecessor = vertex_w;
                   }
-
              }
+
            }
 
         } // closes 'else'
@@ -174,15 +167,31 @@ void graphOperation(graph_t *G, int operation)
       // print out the shortest path from source to destination
       if (shortestDistance[destination_vertex]->cost != FLT_MAX)
       {
-          printf("The shortest path is %d", destination_vertex);
+          // we need to print the shortest path in correct order, not starting
+          // from the predecessor and ending at the souce
           i = destination_vertex;
-          while (shortestDistance[i]->predecessor > 0)
-          {
-              printf(" --> %d", shortestDistance[i]->predecessor);
-              i = shortestDistance[i]->predecessor;
-          }
-          printf(" --> %d\n", source_vertex);
+          int path_count = 0;
+          while (i >= 0)
+             { path_count++; i = shortestDistance[i]->predecessor;  }
 
+          int temp = path_count - 2; // -2 since path_count -1 is destination_vertex
+          // and we are starting at the destination predecessor
+
+          int create_path[path_count];
+          create_path[path_count - 1] = destination_vertex;
+          i = destination_vertex;
+          while (temp >= 0)
+             {  create_path[temp] = shortestDistance[i]->predecessor;
+                i = shortestDistance[i]->predecessor;
+                temp--;
+             }
+
+          printf("Shortest path from source to destination: %d ", source_vertex);
+          for (i = 1; i < path_count; i++)
+          {
+            printf("--> %d ", create_path[i]);
+          }
+          puts("");
       }
 
     } // closes if operation == 1

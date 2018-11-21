@@ -17,11 +17,7 @@
     -v         enable verbose output
     -r [x]     seed for the uniform random number generator
  */
-#include "graphOperations.h"
-
-/* constants used with Global variables */
-#define TRUE 1
-#define FALSE 0
+#include "graph.h"
 
 /* Global variables for command line parameters */
 int graph_type = 1;
@@ -43,6 +39,7 @@ int main(int argc, char **argv)
 {
   getCommandLine(argc, argv);
   graph_t G = constructGraph(vertices);
+  graphOperation(&G, graph_operation);
   destructGraph(&G);
 
   return 0;

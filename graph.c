@@ -6,7 +6,8 @@
 
 #include "graph.h"
 extern int graph_type;
-
+extern int source_vertex;
+extern int destination_vertex;
 
 
 /******************************************************************************
@@ -23,8 +24,11 @@ graph_t constructGraph(int vertices)
      {
         matrix[i] = (double *) malloc(vertices * sizeof(double));
         for (int j = 0; j < vertices; j++)
-            matrix[i][j] = FLT_MAX;
-      }
+        {
+           if (i == j) { matrix[i][j] = 0; }
+           else { matrix[i][j] = FLT_MAX; }
+        }
+     }
 
     G.NumVertices = vertices;
     G.adjMatrix = matrix;
@@ -71,4 +75,154 @@ void destructGraph(graph_t *G)
     }
   free(G->adjMatrix);
 
+}
+
+/******************************************************************************
+ * Function graphOperations
+ * Used with the -h flag, runs operation 1, 2, or 3
+ */
+void graphOperation(graph_t *G, int operation)
+{
+    if (operation == 1)
+    {
+      // finding shortest path from source_vertex to destination_vertex
+
+      int vertices = G->NumVertices;
+      double MinDistance = FLT_MAX;
+      int vertex_w;
+      int i, j;
+      int already_confirmed = FALSE;
+      double path_cost;
+      int confirmed_count = 0;
+      int no_new_paths = FALSE;
+
+      // the following is a set containing the vertices for which we have
+      // confirmed the shortest distance. We will have to append to the array
+      int *confirmed = (int*) calloc(vertices, sizeof(int));
+      confirmed[0] = source_vertex;
+      confirmed_count++;
+
+      // an array containing the shortest distance from the source to each
+      // vertex, each vertex represented by the index. Each dijskstra_node
+      // contains the cost and the predecessor to get to that node
+      dijkstra_node **shortestDistance = (dijkstra_node**)malloc(sizeof(dijkstra_node) * vertices);
+
+    // fill in the shortestDistance array with the distances from the source
+      for (i = 0; i < vertices; i++)
+         {
+           shortestDistance[i] = (dijkstra_node*)malloc(sizeof(dijkstra_node));
+           shortestDistance[i]->cost = G->adjMatrix[source_vertex][i];
+           shortestDistance[i]->predecessor = -1;
+         }
+
+      while(confirmed_count != vertices && no_new_paths == FALSE)
+      {
+          MinDistance = FLT_MAX;
+          vertex_w = -1; // invalid vertex, for now
+
+        // find the vertex at the minimum distance from the source
+          for (i = 0; i < vertices; i++)
+          {
+            // make sure this vertice is not already confirmed
+            already_confirmed = FALSE;
+            for (j = 0; j < confirmed_count; j++)
+            {
+              if (confirmed[j] == i) { already_confirmed = TRUE; }
+            }
+
+            if (already_confirmed == FALSE && shortestDistance[i]->cost < MinDistance)
+            {
+              MinDistance = shortestDistance[i]->cost;
+              vertex_w = i;
+            }
+          }
+
+        // if no vertex was found, there are no new paths
+        if (vertex_w == -1) { no_new_paths = TRUE; }
+
+        else
+        {
+           // if a vertex was found, add vertex_w to confirmed set
+             confirmed[confirmed_count] = vertex_w;
+             confirmed_count++;
+
+           // update the shortest distances via vertex_w that are not already confirmed
+           for (i = 0; i < vertices; i++)
+           {
+             if (G->adjMatrix[vertex_w][i] < FLT_MAX)
+             {
+                 path_cost = shortestDistance[vertex_w]->cost + G->adjMatrix[vertex_w][i];
+                 if (path_cost < shortestDistance[i]->cost)
+                  {
+                     shortestDistance[i]->cost = path_cost;
+                     shortestDistance[i]->predecessor = vertex_w;
+                  }
+
+             }
+           }
+
+        } // closes 'else'
+      } // closes while loop
+
+      // print out the path cost
+      printf("Cost from source to destination: ");
+      if (shortestDistance[destination_vertex]->cost == FLT_MAX)
+         { printf("No path exists\n"); }
+      else
+         printf("%0.2lf\n", shortestDistance[destination_vertex]->cost);
+
+      // print out the shortest path from source to destination
+      if (shortestDistance[destination_vertex]->cost != FLT_MAX)
+      {
+          printf("The shortest path is %d", destination_vertex);
+          i = destination_vertex;
+          while (shortestDistance[i]->predecessor > 0)
+          {
+              printf(" --> %d", shortestDistance[i]->predecessor);
+              i = shortestDistance[i]->predecessor;
+          }
+          printf(" --> %d\n", source_vertex);
+
+      }
+
+    } // closes if operation == 1
+}
+
+/******************************************************************************
+ * Function printGraph
+ * Prints a visual representation of the graph
+ */
+void graph_debug_print(graph_t *G)
+{
+   for(int i = 0; i < G->NumVertices; i++)
+   {
+      printf("Adjacency list of vertex %d\n", i);
+      printf("head: %d ->", i);
+      for (int j = 0; j < G->NumVertices; j++)
+      {
+          if(G->adjMatrix[i][j] < FLT_MAX && i != j)
+          {
+              printf(" %d,", j);
+          }
+      }
+      printf("\n\n"); // newline
+   }
+}
+
+/******************************************************************************
+ * Prints the adjacency matrix of our graph
+ */
+void print_adjMatrix(graph_t *G)
+{
+   for (int i = 0; i < G->NumVertices; i++)
+   {
+     for (int j = 0; j < G->NumVertices; j++)
+     {
+        if(G->adjMatrix[i][j] == FLT_MAX)
+          printf("   INF   ");
+        else
+          printf("   %0.1lf   ", G->adjMatrix[i][j]);
+     }
+     puts("");
+   }
 }

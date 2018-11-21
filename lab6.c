@@ -20,10 +20,10 @@
 #include "graph.h"
 
 /* Global variables for command line parameters */
-int graph_type = 1;
+int graph_type;
 int seed = 10212018;
 int Verbose = FALSE;
-int vertices = 7;
+int vertices;
 int adjVerts;
 int graph_operation;
 int destination_vertex;
@@ -32,9 +32,7 @@ int source_vertex;
 /* Prototypes for functions in this file only */
 void getCommandLine(int argc, char **argv);
 
-/******************************************************************************
- * main for MP6
- */
+
 int main(int argc, char **argv)
 {
   getCommandLine(argc, argv);
@@ -49,7 +47,7 @@ int main(int argc, char **argv)
 /******************************************************************************
  * Read in the command line arguments
  */
- void getCommandLine(int argc, char **argv){
+void getCommandLine(int argc, char **argv){
    int c;
    int index;
 

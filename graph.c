@@ -8,6 +8,7 @@
 extern int graph_type;
 extern int source_vertex;
 extern int destination_vertex;
+extern int Verbose;
 
 
 /******************************************************************************
@@ -219,6 +220,9 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
        int confirmed_count = 0;
        int no_new_paths = FALSE;
 
+       if (Verbose)
+          printf("Starting at node %d\n", source);
+
        // the following is a set containing the vertices for which we have
        // confirmed the shortest distance. 1 means yes, 0 means no
        int *confirmed = (int*) calloc(vertices, sizeof(int));
@@ -257,6 +261,8 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
             // if a vertex was found, add vertex_w to confirmed set
               confirmed[vertex_w] = 1;
               confirmed_count++;
+              if (Verbose)
+                  printf(" %d added with cost %g\n", vertex_w, MinDistance);
 
             // update the shortest distances via vertex_w that are not already confirmed
             for (i = 0; i < vertices; i++)
@@ -268,6 +274,9 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
                    {
                       distance_array[i] = path_cost;
                       predecessor_array[i] = vertex_w;
+                      if (Verbose){
+                          printf("\t%d has a lower cost %g with predecessor %d\n",
+                          i, path_cost, vertex_w);}
                    }
               }
 
@@ -275,6 +284,9 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
 
          } // closes 'else'
        } // closes while loop
+
+       if (Verbose)
+          printf("Found %d nodes, including source\n", confirmed_count);
 
        if (print == TRUE)
        {
@@ -321,7 +333,7 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
 
 }
 
-/*
+/******************************************************************************
  * Function network_diameter()
  * Finds the longest possible path between vertices in the graph for which there
  *   is a path
@@ -329,17 +341,19 @@ void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
  */
 void network_diameter(graph_t *G)
 {
+    int i, j;
     int num_vertices = G->NumVertices;
     int no_path_count = 0;
     double max_cost = 0;
     int max_source, max_destination;
-    double distances[num_vertices][num_vertices];
+    double **distances = (double**) malloc(sizeof(double*) * num_vertices);
     int predecessor_array[num_vertices];
 
-    for (int i = 0; i < num_vertices; i++)
+    for (i = 0; i < num_vertices; i++)
     {
+        distances[i] = (double*) malloc(sizeof(double) * num_vertices);
         shortestPath(G, distances[i], predecessor_array, i, i, FALSE);
-        for (int j = 0; j < num_vertices; j++)
+        for (j = 0; j < num_vertices; j++)
         {
           if (distances[i][j] > max_cost && distances[i][j] < FLT_MAX)
           {
@@ -351,17 +365,27 @@ void network_diameter(graph_t *G)
                 no_path_count++;
         }
     }
+    if (no_path_count == num_vertices)
+      printf("No paths exist between any vertices\n");
+    else
+   {
+      printf("The network diameter is %0.3lf\n", max_cost);
+      if (no_path_count > 0)
+          puts("The graph contains at least one pair of vertices with no path");
 
-    printf("The network diameter is %0.3lf\n", max_cost);
-    if (no_path_count > 0)
-        puts("The graph contains at least one pair of vertices with no path");
+      shortestPath(G, distances[0], predecessor_array, max_source, max_destination, TRUE);
+    }
 
-    shortestPath(G, distances[0], predecessor_array, max_source, max_destination, TRUE);
+    // free our dynamically allocated memory
+    for (i = 0; i < num_vertices; i++)
+      free(distances[i]);
+
+    free(distances);
 
 }
 
 
-/*
+/******************************************************************************
  * Function link_disjoint_path
  * Finds the shortet path from source to destination, then removes this path
  * and repeats the process until there is no longer a path

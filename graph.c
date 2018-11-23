@@ -189,7 +189,10 @@ void destructGraph(graph_t *G)
 void graphOperation(graph_t *G, int operation)
 {
     if (operation == 1) // finding shortest path from source_vertex to destination_vertex
-      {  shortestPath(G, source_vertex, destination_vertex, 1); }
+      {
+        double distances[G->NumVertices];
+        shortestPath(G, distances, source_vertex, destination_vertex, 1);
+       }
 
     else if (operation == 2)
       {  network_diameter(G); }
@@ -200,9 +203,9 @@ void graphOperation(graph_t *G, int operation)
  * Function shortestPath
  * Called if graph_operation == 1
  * Finds the shortest path from source to destination and prints the cost and path
- * Returns the cost from the source vertex to desintination
+ * distance_array is the array which holds the costs from the source to each vertice
  */
-double shortestPath(graph_t *G, int source, int destination, int print)
+void shortestPath(graph_t *G, double distance_array[], int source, int destination, int print)
 {
        int vertices = G->NumVertices;
        double MinDistance = FLT_MAX;
@@ -210,7 +213,6 @@ double shortestPath(graph_t *G, int source, int destination, int print)
        double path_cost;
        int confirmed_count = 0;
        int no_new_paths = FALSE;
-       double cost;
 
        // the following is a set containing the vertices for which we have
        // confirmed the shortest distance. 1 means yes, 0 means no
@@ -218,19 +220,17 @@ double shortestPath(graph_t *G, int source, int destination, int print)
        confirmed[source] = 1;
        confirmed_count++;
 
-       // an array containing the shortest distance from the source to each
-       // vertex, each vertex represented by the index. Each dijskstra_node
-       // contains the cost and the predecessor to get to that node
-       dijkstra_node **shortestDistance = (dijkstra_node**)malloc(sizeof(dijkstra_node) * vertices);
+       // an array containing the predecessor to reach each vertex
+       int predecessor_array[vertices];
 
      // fill in the shortestDistance array with the distances from the source
+     // predecessors for each will start as source
        for (i = 0; i < vertices; i++)
           {
-            shortestDistance[i] = (dijkstra_node*)malloc(sizeof(dijkstra_node));
-            shortestDistance[i]->cost = G->adjMatrix[source][i];
-            shortestDistance[i]->predecessor = source;
+            distance_array[i] = G->adjMatrix[source][i];
+            predecessor_array[i] = source;
           }
-         shortestDistance[source]->predecessor = -1;
+         predecessor_array[source] = -1;
 
        while(confirmed_count != vertices && no_new_paths == FALSE)
        {
@@ -240,9 +240,9 @@ double shortestPath(graph_t *G, int source, int destination, int print)
          // find the vertex at the minimum distance from the source
            for (i = 0; i < vertices; i++)
            {
-             if (confirmed[i] == 0 && shortestDistance[i]->cost < MinDistance)
+             if (confirmed[i] == 0 && distance_array[i] < MinDistance)
              {
-               MinDistance = shortestDistance[i]->cost;
+               MinDistance = distance_array[i];
                vertex_w = i;
              }
            }
@@ -261,11 +261,11 @@ double shortestPath(graph_t *G, int source, int destination, int print)
             {
               if (G->adjMatrix[vertex_w][i] < FLT_MAX && confirmed[i] == 0)
               {
-                  path_cost = shortestDistance[vertex_w]->cost + G->adjMatrix[vertex_w][i];
-                  if (path_cost < shortestDistance[i]->cost)
+                  path_cost = distance_array[vertex_w] + G->adjMatrix[vertex_w][i];
+                  if (path_cost < distance_array[i])
                    {
-                      shortestDistance[i]->cost = path_cost;
-                      shortestDistance[i]->predecessor = vertex_w;
+                      distance_array[i] = path_cost;
+                      predecessor_array[i] = vertex_w;
                    }
               }
 
@@ -274,28 +274,25 @@ double shortestPath(graph_t *G, int source, int destination, int print)
          } // closes 'else'
        } // closes while loop
 
-      // save the cost variable, will return after freeing dynamically allocated
-      // memory
-       cost = shortestDistance[destination]->cost;
 
        if (print == TRUE)
        {
          // print out the path cost
          printf("Cost from source to destination: ");
-         if (shortestDistance[destination]->cost == FLT_MAX)
+         if (distance_array[destination] == FLT_MAX)
             { printf("No path exists\n"); }
          else
-            printf("%0.2lf\n", shortestDistance[destination]->cost);
+            printf("%0.2lf\n", distance_array[destination]);
 
     // print out the shortest path from source to destination
-         if (shortestDistance[destination]->cost != FLT_MAX)
+         if (distance_array[destination] != FLT_MAX)
          {
              // we need to print the shortest path in correct order, not starting
              // from the predecessor and ending at the souce
              i = destination;
              int path_count = 0;
              while (i >= 0)
-                { path_count++; i = shortestDistance[i]->predecessor;  }
+                { path_count++; i = predecessor_array[i];  }
 
              int temp = path_count - 2; // -2 since path_count -1 is destination
              // and we are filling the array starting at the destination predecessor
@@ -304,8 +301,8 @@ double shortestPath(graph_t *G, int source, int destination, int print)
              create_path[path_count - 1] = destination;
              i = destination;
              while (temp >= 0)
-                {  create_path[temp] = shortestDistance[i]->predecessor;
-                   i = shortestDistance[i]->predecessor;
+                {  create_path[temp] = predecessor_array[i];
+                   i = predecessor_array[i];
                    temp--;
                 }
 
@@ -318,17 +315,9 @@ double shortestPath(graph_t *G, int source, int destination, int print)
          }
       } // closes 'if print == TRUE'
 
-  // free our dynamically allocated memory
      // free confirmed
      free(confirmed);
-     // free shortestDistance
-     for (i = 0; i < vertices; i++)
-     {
-       free(shortestDistance[i]);
-     }
-     free(shortestDistance);
 
-     return cost;
 }
 
 /*
@@ -340,34 +329,33 @@ double shortestPath(graph_t *G, int source, int destination, int print)
 void network_diameter(graph_t *G)
 {
     int num_vertices = G->NumVertices;
+    int no_path_count = 0;
+    double max_cost = 0;
     int max_source, max_destination;
     double distances[num_vertices][num_vertices];
-    double max_cost = 0.0;
-    double path_cost = 0.0;
-    int no_path_count = 0;
 
     for (int i = 0; i < num_vertices; i++)
     {
+        shortestPath(G, distances[i], i, i, FALSE);
         for (int j = 0; j < num_vertices; j++)
         {
-            distances[i][j] = shortestPath(G, i, j, 0);
-            path_cost = distances[i][j];
-            if (path_cost > max_cost && path_cost < FLT_MAX)
-            {
-                max_cost = path_cost;
-                max_source = i;
+          if (distances[i][j] > max_cost && distances[i][j] < FLT_MAX)
+          {
+                max_cost = distances[i][j];
                 max_destination = j;
-            }
-            if (path_cost == FLT_MAX)
+                max_source = i;
+          }
+          if (distances[i][j] == FLT_MAX)
                 no_path_count++;
         }
     }
 
-    printf("The Network Diameter is %0.4lf\n", max_cost);
+    printf("The network diameter is %0.3lf\n", max_cost);
     if (no_path_count > 0)
         puts("The graph contains at least one pair of vertices with no path");
 
-    shortestPath(G, max_source, max_destination, TRUE);
+    shortestPath(G, distances[0], max_source, max_destination, TRUE);
+
 }
 
 /******************************************************************************

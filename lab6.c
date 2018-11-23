@@ -37,8 +37,15 @@ int main(int argc, char **argv)
 {
   getCommandLine(argc, argv);
   graph_t G = constructGraph(vertices, adjVerts);
-//  print_adjMatrix(&G);
+
+  clock_t start, end;
+  double elapse_time; // time in milliseconds
+  start = clock();
   graphOperation(&G, graph_operation);
+  end = clock();
+  elapse_time = 1000.0 * ((double) (end - start)) / CLOCKS_PER_SEC;
+  printf("elapse time: %lf\n", elapse_time);
+
   destructGraph(&G);
 
   return 0;

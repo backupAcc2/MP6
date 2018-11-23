@@ -191,11 +191,15 @@ void graphOperation(graph_t *G, int operation)
     if (operation == 1) // finding shortest path from source_vertex to destination_vertex
       {
         double distances[G->NumVertices];
-        shortestPath(G, distances, source_vertex, destination_vertex, 1);
+        int predecessors[G->NumVertices];
+        shortestPath(G, distances, predecessors, source_vertex, destination_vertex, 1);
        }
 
     else if (operation == 2)
-      {  network_diameter(G); }
+        network_diameter(G);
+
+    else
+        link_disjoint_path(G, source_vertex, destination_vertex);
 }
 
 
@@ -205,7 +209,8 @@ void graphOperation(graph_t *G, int operation)
  * Finds the shortest path from source to destination and prints the cost and path
  * distance_array is the array which holds the costs from the source to each vertice
  */
-void shortestPath(graph_t *G, double distance_array[], int source, int destination, int print)
+void shortestPath(graph_t *G, double distance_array[], int predecessor_array[],
+   int source, int destination, int print)
 {
        int vertices = G->NumVertices;
        double MinDistance = FLT_MAX;
@@ -219,9 +224,6 @@ void shortestPath(graph_t *G, double distance_array[], int source, int destinati
        int *confirmed = (int*) calloc(vertices, sizeof(int));
        confirmed[source] = 1;
        confirmed_count++;
-
-       // an array containing the predecessor to reach each vertex
-       int predecessor_array[vertices];
 
      // fill in the shortestDistance array with the distances from the source
      // predecessors for each will start as source
@@ -273,7 +275,6 @@ void shortestPath(graph_t *G, double distance_array[], int source, int destinati
 
          } // closes 'else'
        } // closes while loop
-
 
        if (print == TRUE)
        {
@@ -333,10 +334,11 @@ void network_diameter(graph_t *G)
     double max_cost = 0;
     int max_source, max_destination;
     double distances[num_vertices][num_vertices];
+    int predecessor_array[num_vertices];
 
     for (int i = 0; i < num_vertices; i++)
     {
-        shortestPath(G, distances[i], i, i, FALSE);
+        shortestPath(G, distances[i], predecessor_array, i, i, FALSE);
         for (int j = 0; j < num_vertices; j++)
         {
           if (distances[i][j] > max_cost && distances[i][j] < FLT_MAX)
@@ -354,7 +356,41 @@ void network_diameter(graph_t *G)
     if (no_path_count > 0)
         puts("The graph contains at least one pair of vertices with no path");
 
-    shortestPath(G, distances[0], max_source, max_destination, TRUE);
+    shortestPath(G, distances[0], predecessor_array, max_source, max_destination, TRUE);
+
+}
+
+
+/*
+ * Function link_disjoint_path
+ * Finds the shortet path from source to destination, then removes this path
+ * and repeats the process until there is no longer a path
+ */
+void link_disjoint_path(graph_t *G, int source, int destination)
+{
+    double path_cost = 0;
+// we'll use these to remove edges along the path from source to destination
+    int vertex_rover;
+    int vertex_predecessor;
+
+    int predecessors[G->NumVertices];
+  // distances holds the cost from the source to each other vertex
+    double distances[G->NumVertices];
+
+    while (path_cost != FLT_MAX)
+    {
+        shortestPath(G, distances, predecessors, source, destination, TRUE);
+        path_cost = distances[destination];
+        vertex_rover = destination;
+        vertex_predecessor = predecessors[destination]; // now equals the predecessor to the final vertex
+        while (vertex_predecessor >= 0) // the flag of -1 is used for the source
+        {
+            G->adjMatrix[vertex_predecessor][vertex_rover] = FLT_MAX;
+            vertex_rover = vertex_predecessor;
+            vertex_predecessor = predecessors[vertex_predecessor];
+        }
+
+    }
 
 }
 

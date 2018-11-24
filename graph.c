@@ -9,6 +9,7 @@ extern int graph_type;
 extern int source_vertex;
 extern int destination_vertex;
 extern int Verbose;
+extern int seed;
 
 
 /******************************************************************************
@@ -113,6 +114,9 @@ graph_t create_graph_3(int vertices, int adjNeighbors)
     double **matrix = (double **) malloc(vertices * sizeof(double *));
     double matrix_x[vertices]; // holds the x values of each vertex
     double matrix_y[vertices]; // holds the y values of each vertex
+
+  // set our seed
+    srand48(seed);
 
   // find our value of C
     C = sqrt(adjNeighbors / (vertices * M_PI));
@@ -393,6 +397,7 @@ void network_diameter(graph_t *G)
 void link_disjoint_path(graph_t *G, int source, int destination)
 {
     double path_cost = 0;
+    int path_count = 0; // counts the number of paths we find
 // we'll use these to remove edges along the path from source to destination
     int vertex_rover;
     int vertex_predecessor;
@@ -413,9 +418,12 @@ void link_disjoint_path(graph_t *G, int source, int destination)
             vertex_rover = vertex_predecessor;
             vertex_predecessor = predecessors[vertex_predecessor];
         }
-
+        path_count++;
     }
 
+    // subtract one from path_count since it increments on the infinte path as well
+    path_count--;
+    printf("There was a total of %d paths\n", path_count);
 }
 
 /******************************************************************************
